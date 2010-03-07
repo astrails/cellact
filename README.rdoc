@@ -1,6 +1,8 @@
 = astrails-cellact
 
-SMS Gateway integration
+CellAct (http://cellact.com/) SMS Gateway integration
+
+run ./script/generate cellact
 
 == Copyright 2010
 
