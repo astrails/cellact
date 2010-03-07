@@ -1,0 +1,7 @@
+= astrails-cellact
+
+SMS Gateway integration
+
+== Copyright 2010
+
+Copyright (c) 2010 Boris Nadion, Astrails Ltd. See LICENSE for details.
