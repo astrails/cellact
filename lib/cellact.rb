@@ -6,13 +6,15 @@ module Cellact
       @from, @user, @password, @sender = from, user, password, sender
     end
 
-    def send_sms(mobile, text, &block)
+    def send_sms(mobile, text, parent, &block)
       request = _request(mobile, text)
-      block.call(request, nil)
+      parent.cellact_logs.create(:kind => "request", :wire_log => request)
 
       response = Sender._send_sms!(request)
-      block.call(nil, response)
-      nil
+      res = Sender.success?(response)
+      parent.cellact_logs.create(:kind => "response", :wire_log => response, :status => res ? "success" : "failure")
+
+      res
     end
 
     def self.success?(response)

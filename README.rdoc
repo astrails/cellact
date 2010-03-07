@@ -2,7 +2,11 @@
 
 CellAct (http://cellact.com/) SMS Gateway integration
 
-run ./script/generate cellact
+1. run ""./script/generate cellact"
+2. add "has_many :cellact_logs, :as => :cellactable" to your model
+3. use in your model:
+  sms = Cellact::Sender.new(SMS_FROM, SMS_USER, SMS_PASSWORD, SMS_SENDER)
+  sms.send_sms(mobile_phone, text, self) # => true/false
 
 == Copyright 2010
 
