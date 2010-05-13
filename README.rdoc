@@ -2,11 +2,37 @@
 
 CellAct (http://cellact.com/) SMS Gateway integration
 
-1. run ""./script/generate cellact"
-2. add "has_many :cellact_logs, :as => :cellactable" to your model
-3. use in your model:
-  sms = Cellact::Sender.new(SMS_FROM, SMS_USER, SMS_PASSWORD, SMS_SENDER)
-  sms.send_sms(mobile_phone, text, self) # => true/false
+== Usage
+    class SmsMessage < ActiveRecord::Base
+      belongs_to :user
+
+      def send_sms!
+        sms = Cellact::Sender.new(SMS_FROM, SMS_USER, SMS_PASSWORD, sender_mobile)
+
+        res = sms.send_sms(receiver_mobile, message) do |flow|
+          flow.request do |dump|
+            self.request_dump = dump
+            save!
+          end
+          flow.response do |dump, exception, is_sent|
+            self.response_dump = dump || exception
+            self.sent_at = Time.now.utc unless exception
+            self.success = is_sent
+            save!
+          end
+        end
+      end
+    end
+
+    class User < ActiveRecord::Base
+      def send_a_message
+        sms = sms_messages.create!(:kind => "dummy", :sender_mobile => from, :receiver_mobile => to, :message => "call me asap!")
+
+        sms.send_sms!
+
+        sms.success?
+      end
+    end
 
 == Copyright 2010
 

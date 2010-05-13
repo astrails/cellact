@@ -1,20 +1,35 @@
 module Cellact
   URL = "http://la.cellactpro.com/unistart5.asp"
 
+  class FlowLogger
+    def request(&block)
+      @request = block
+    end
+
+    def response(&block)
+      @response = block
+    end
+
+    def call(type, *args)
+      caller = instance_variable_get("@#{type}")
+      caller.call(*args) if caller
+    end
+  end
+
   class Sender
     def initialize(from, user, password, sender)
       @from, @user, @password, @sender = from, user, password, sender
     end
 
-    def send_sms(mobile, text, parent, &block)
+    def send_sms(mobile, text)
+      flow = FlowLogger.new
+      yield(flow)
+
       request = _request(mobile, text)
-      parent.cellact_logs.create(:kind => "request", :wire_log => request)
+      flow.call(:request, request)
 
-      response = Sender._send_sms!(request)
-      res = Sender.success?(response)
-      parent.cellact_logs.create(:kind => "response", :wire_log => response, :status => res ? "success" : "failure")
-
-      res
+      response, exception = Sender._send_sms!(request)
+      flow.call(:response, response, exception, Sender.success?(response))
     end
 
     def self.success?(response)
@@ -50,11 +65,15 @@ module Cellact
     end
 
     def self._send_sms!(request_xml)
-      res = Net::HTTP.post_form(URI.parse(Cellact::URL), 'XMLString' => request_xml)
-      if res.is_a?(Net::HTTPOK)
-        res.body
-      else
-        "#{res.code} / #{res.try(:body)}"
+      begin
+        res = Net::HTTP.post_form(URI.parse(Cellact::URL), 'XMLString' => request_xml)
+        if res.is_a?(Net::HTTPOK)
+          [res.body, nil]
+        else
+          ["#{res.code} / #{res.try(:body)}", nil]
+        end
+      rescue => e
+        [nil, e.to_s]
       end
     end
   end
